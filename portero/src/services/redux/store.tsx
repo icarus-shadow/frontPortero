@@ -7,7 +7,7 @@ import {formationSlice} from "./slices/data/formationSlice";
 export const store = configureStore({
     reducer: {
         usersReducer: usersSlice.reducer,
-        historyReduce: historySlice.reducer,
+        historyReducer: historySlice.reducer,
         authReducer: authSlice.reducer,
         elementsReducer: elementsSlice.reducer,
         formationsReducer: formationSlice.reducer,

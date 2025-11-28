@@ -3,7 +3,7 @@ import CountCard from "./CounterCard.tsx";
 import { useAppSelector } from '../services/redux/hooks';
 
 const ContNav = () => {
-    const historyData = useAppSelector(state => state.historyReduce.data);
+    const historyData = useAppSelector(state => state.historyReducer.data);
 
     const activeElements = historyData ? new Set(historyData.filter(item => !item.salida || item.salida === '').map(item => item.equipos_o_elementos_id)).size : 0;
 
