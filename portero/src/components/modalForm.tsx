@@ -4,7 +4,6 @@ import {
     Grid, Typography, FormControl, InputLabel, Alert, Button
 } from "@mui/material";
 import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import QRCode from 'qrcode.react';
 import { useAppSelector } from '../services/redux/hooks.tsx';
 import type { users, elements } from '../types/interfacesData.tsx';
 
@@ -180,7 +179,7 @@ const isQrMode = modalType === 'ingreso' || modalType === 'salida';
                 }
 
                 if (matchedUser) {
-                    if (scannedElement && scannedElement.usuarios.id !== matchedUser.id) {
+                    if (scannedElement && scannedElement.usuarios.length > 0 && !scannedElement.usuarios.some(user => user.id == matchedUser.id)) {
                         setAlertMessage('El usuario no es propietario del elemento. ¿Confirmar de todos modos?');
                         setOnConfirm(() => () => {
                             setScannedUser(matchedUser);
@@ -197,7 +196,7 @@ const isQrMode = modalType === 'ingreso' || modalType === 'salida';
                 }
 
                 if (matchedElement) {
-                    if (scannedUser && matchedElement.usuarios.id !== scannedUser.id) {
+                    if (scannedUser && scannedUser.id && matchedElement.usuarios.length > 0 && !matchedElement.usuarios.some(user => user.id == scannedUser.id)) {
                         setAlertMessage('El usuario no es propietario del elemento. ¿Confirmar de todos modos?');
                         setOnConfirm(() => () => {
                             setScannedElement(matchedElement);

@@ -25,7 +25,7 @@ export interface elements {
     descripcion: string;
     qr_hash: string;
     path_foto_equipo_implemento: string;
-    usuarios: users
+    usuarios: users[]
 }
 
 export interface subElements {
