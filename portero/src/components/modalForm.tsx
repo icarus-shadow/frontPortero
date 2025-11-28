@@ -125,7 +125,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
 
         // Verificar que historyData sea un array válido
         if (scannedUser && scannedElement && Array.isArray(historyData)) {
-            console.log('✅ Todas las condiciones cumplidas - Verificando historial:', {
+            console.log(' Todas las condiciones cumplidas - Verificando historial:', {
                 modalType,
                 scannedElementId: scannedElement.id,
                 historyDataCount: historyData.length,
@@ -133,11 +133,11 @@ const ModalForm: React.FC<ModalFormProps> = ({
             });
 
             if (modalType === 'ingreso') {
-                console.log('🔵 Modo INGRESO - Buscando ingresos pendientes...');
+                console.log(' Modo INGRESO - Buscando ingresos pendientes...');
 
                 // Verificar si hay un ingreso pendiente (sin salida)
                 const registrosDelElemento = historyData.filter(h => h.equipos_o_elementos_id === scannedElement.id);
-                console.log('🔵 Registros del elemento:', registrosDelElemento);
+                console.log(' Registros del elemento:', registrosDelElemento);
 
                 const hasPendingEntry = historyData.some(h => {
                     const isThisElement = h.equipos_o_elementos_id === scannedElement.id;
@@ -155,10 +155,10 @@ const ModalForm: React.FC<ModalFormProps> = ({
                     return isThisElement && noSalida;
                 });
 
-                console.log('🔵 Ingreso - hasPendingEntry:', hasPendingEntry);
+                console.log(' Ingreso - hasPendingEntry:', hasPendingEntry);
 
                 if (hasPendingEntry) {
-                    console.log('⚠️ ALERTA DE INGRESO ACTIVADA');
+                    console.log('⚠ ALERTA DE INGRESO ACTIVADA');
                     setEntryAlertMessage('El elemento tiene un ingreso anterior pendiente. Inconsistencia detectada.');
                     setShowEntryAlert(true);
                     setIsBlocked(true);
@@ -168,19 +168,19 @@ const ModalForm: React.FC<ModalFormProps> = ({
                         setIsBlocked(false);
                     });
                 } else {
-                    console.log('✅ No hay ingresos pendientes, se puede proceder');
+                    console.log(' No hay ingresos pendientes, se puede proceder');
                 }
             } else if (modalType === 'salida') {
-                console.log('🟠 Modo SALIDA - Buscando ingresos activos...');
+                console.log(' Modo SALIDA - Buscando ingresos activos...');
 
                 // Verificar si hay un ingreso activo (sin salida)
                 const registrosDelElemento = historyData.filter(h => h.equipos_o_elementos_id === scannedElement.id);
-                console.log('🟠 Registros del elemento:', registrosDelElemento);
+                console.log(' Registros del elemento:', registrosDelElemento);
 
                 const hasActiveEntry = historyData.some(h => {
                     const isThisElement = h.equipos_o_elementos_id === scannedElement.id;
                     const noSalida = !h.salida || h.salida === null || h.salida === '';
-                    console.log('🔍 Verificando registro:', {
+                    console.log(' Verificando registro:', {
                         id: h.id,
                         equipos_o_elementos_id: h.equipos_o_elementos_id,
                         scannedElementId: scannedElement.id,
@@ -193,10 +193,10 @@ const ModalForm: React.FC<ModalFormProps> = ({
                     return isThisElement && noSalida;
                 });
 
-                console.log('🟠 Salida - hasActiveEntry:', hasActiveEntry);
+                console.log(' Salida - hasActiveEntry:', hasActiveEntry);
 
                 if (!hasActiveEntry) {
-                    console.log('⚠️ ALERTA DE SALIDA ACTIVADA - No hay entrada activa');
+                    console.log(' ALERTA DE SALIDA ACTIVADA - No hay entrada activa');
                     setExitAlertMessage('El elemento no tiene un historial activo previo. No se le hizo ingreso.');
                     setShowExitAlert(true);
                     setIsBlocked(true);
@@ -206,11 +206,11 @@ const ModalForm: React.FC<ModalFormProps> = ({
                         setIsBlocked(false);
                     });
                 } else {
-                    console.log('✅ Hay entrada activa, se puede dar salida');
+                    console.log(' Hay entrada activa, se puede dar salida');
                 }
             }
         } else {
-            console.log('❌ Condiciones NO cumplidas:', {
+            console.log(' Condiciones NO cumplidas:', {
                 faltaUser: !scannedUser,
                 faltaElement: !scannedElement,
                 faltaHistory: !historyData,
