@@ -1,0 +1,35 @@
+:root{
+    --text: #d7e0f9;
+    --background: #040b1f;
+    --primary: #839cee;
+    --secondary: #597aff;
+    --accent: #e122b1;
+
+    --text-rgb: 215, 224, 249;
+    --background-rgb:4, 11, 31;
+    --primary-rgb:131, 156, 238;
+    --secondary-rgb: 89, 122, 255;
+    --accent-rgb:225, 34, 177;
+
+    --primary-hover: #6b8ce6;
+
+    --button-border-radius: 0.5rem;
+    --button-padding: 0.5rem 1rem;
+
+    --button-cancel-bg: var(--text);
+    --button-cancel-color: var(--background);
+    --button-cancel-border: var(--text);
+    --button-cancel-hover-bg: var(--accent);
+
+    --button-save-bg: var(--primary);
+    --button-save-color: white;
+    --button-save-hover-bg: var(--primary-hover);
+
+    --success-color: #7fa98f;
+    --error-color: #c97a7a;
+}
+
+body{
+    background-color: var(--background);
+}
+
