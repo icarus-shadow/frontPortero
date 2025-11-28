@@ -35,7 +35,7 @@ export const fetchHistory = createAsyncThunk(
 
 export const createHistory = createAsyncThunk(
     'createHistory',
-    async (data: { usuario_id: number, equipos_o_elementos_id: number }, { dispatch }) => {
+    async (data: { usuario_id: number, equipos_o_elementos_id: number, datetime: string }, { dispatch }) => {
         try {
             const response = await history.create(data);
             if (response.success) {

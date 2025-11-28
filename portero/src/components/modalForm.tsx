@@ -34,8 +34,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
     modalType
 }) => {
     const [scannedCode, setScannedCode] = useState<string>('');
-    const [showAlert, setShowAlert] = useState<boolean>(false);
-    const [scannedData, setScannedData] = useState<string | null>(null);
+
     const html5QrcodeScannerRef = useRef<Html5QrcodeScanner | null>(null);
     const divRef = useRef<HTMLDivElement>(null);
     const [scannedUser, setScannedUser] = useState<users | null>(null);
@@ -58,8 +57,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
 
     const resetForm = () => {
         setScannedCode('');
-        setShowAlert(false);
-        setScannedData(null);
+
         setScannedUser(null);
         setScannedElement(null);
         setShowEntryAlert(false);
@@ -80,7 +78,8 @@ const ModalForm: React.FC<ModalFormProps> = ({
         if (scannedUser && scannedElement) {
             dispatch(createHistory({
                 usuario_id: scannedUser.id,
-                equipos_o_elementos_id: scannedElement.id
+                equipos_o_elementos_id: scannedElement.id,
+                datetime: new Date().toISOString()
             })).then(() => {
                 // Opcional: Mostrar notificación de éxito
                 alert('Registro procesado exitosamente');
@@ -101,7 +100,6 @@ const ModalForm: React.FC<ModalFormProps> = ({
     useEffect(() => {
         if (isOpen) {
             setScannedCode('');
-            setScannedData(null);
             setScannedUser(null);
             setScannedElement(null);
         }
@@ -142,7 +140,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
                 const hasPendingEntry = historyData.some(h => {
                     const isThisElement = h.equipos_o_elementos_id === scannedElement.id;
                     const noSalida = !h.salida || h.salida === null || h.salida === '';
-                    console.log('🔍 Verificando registro:', {
+                    console.log(' Verificando registro:', {
                         id: h.id,
                         equipos_o_elementos_id: h.equipos_o_elementos_id,
                         scannedElementId: scannedElement.id,
@@ -245,10 +243,10 @@ const ModalForm: React.FC<ModalFormProps> = ({
                 // Si ya tenemos ambos datos, no procesar más escaneos
                 if (scannedUser && scannedElement) return;
 
-                setScannedData(decodedText);
+
                 if (!decodedText || decodedText.trim() === '') {
                     console.error('El código escaneado está vacío o inválido');
-                    setShowAlert(true);
+
                     return;
                 }
 
@@ -477,14 +475,21 @@ const ModalForm: React.FC<ModalFormProps> = ({
                                     fontWeight: 'bold'
                                 }}>Información Escaneada</Typography>
                                 {scannedUser && (
-                                    <div style={{ marginBottom: '15px', position: 'relative' }}>
+                                    <div style={{
+                                        marginBottom: '15px',
+                                        position: 'relative',
+                                        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                        padding: '15px',
+                                        borderRadius: '10px',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                                    }}>
                                         <div style={{
                                             display: 'flex',
                                             justifyContent: 'space-between',
                                             alignItems: 'center',
-                                            marginBottom: '8px'
+                                            marginBottom: '10px'
                                         }}>
-                                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: 'var(--primary)' }}>
                                                 Usuario Escaneado:
                                             </Typography>
                                             <Button
@@ -502,19 +507,45 @@ const ModalForm: React.FC<ModalFormProps> = ({
                                                 Limpiar
                                             </Button>
                                         </div>
-                                        <Typography>Nombre: {scannedUser.nombre} {scannedUser.apellido}</Typography>
-                                        <Typography>Documento: {scannedUser.documento}</Typography>
+                                        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                            <img
+                                                src={`https://lumina-testing.onrender.com/api/images/${scannedUser.path_foto}`}
+                                                alt={`${scannedUser.nombre} ${scannedUser.apellido}`}
+                                                style={{
+                                                    width: '80px',
+                                                    height: '80px',
+                                                    objectFit: 'cover',
+                                                    borderRadius: '50%',
+                                                    border: '2px solid var(--primary)'
+                                                }}
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/80?text=User';
+                                                }}
+                                            />
+                                            <div>
+                                                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{scannedUser.nombre} {scannedUser.apellido}</Typography>
+                                                <Typography variant="body2" color="text.secondary">Doc: {scannedUser.documento}</Typography>
+                                                <Typography variant="body2" color="text.secondary">Rol: {scannedUser.role?.nombre_rol || 'N/A'}</Typography>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                                 {scannedElement && (
-                                    <div style={{ marginBottom: '15px', position: 'relative' }}>
+                                    <div style={{
+                                        marginBottom: '15px',
+                                        position: 'relative',
+                                        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                        padding: '15px',
+                                        borderRadius: '10px',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                                    }}>
                                         <div style={{
                                             display: 'flex',
                                             justifyContent: 'space-between',
                                             alignItems: 'center',
-                                            marginBottom: '8px'
+                                            marginBottom: '10px'
                                         }}>
-                                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: 'var(--primary)' }}>
                                                 Elemento Escaneado:
                                             </Typography>
                                             <Button
@@ -532,9 +563,27 @@ const ModalForm: React.FC<ModalFormProps> = ({
                                                 Limpiar
                                             </Button>
                                         </div>
-                                        <Typography>Nombre: {scannedElement.tipo_elemento}</Typography>
-                                        <Typography>Serie: {scannedElement.sn_equipo}</Typography>
-                                        <Typography>Descripción: {scannedElement.descripcion}</Typography>
+                                        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                            <img
+                                                src={`https://lumina-testing.onrender.com/api/images/${scannedElement.path_foto_equipo_implemento}`}
+                                                alt={scannedElement.tipo_elemento}
+                                                style={{
+                                                    width: '80px',
+                                                    height: '80px',
+                                                    objectFit: 'cover',
+                                                    borderRadius: '10px',
+                                                    border: '2px solid var(--primary)'
+                                                }}
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/80?text=Element';
+                                                }}
+                                            />
+                                            <div>
+                                                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{scannedElement.tipo_elemento}</Typography>
+                                                <Typography variant="body2" color="text.secondary">Serie: {scannedElement.sn_equipo}</Typography>
+                                                <Typography variant="body2" color="text.secondary">{scannedElement.descripcion}</Typography>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </Grid>

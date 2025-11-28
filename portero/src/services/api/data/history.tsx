@@ -15,8 +15,9 @@ export const history = {
             throw e;
         }
     },
-    create: async function (data: { usuario_id: number, equipos_o_elementos_id: number }) {
+    create: async function (data: { usuario_id: number, equipos_o_elementos_id: number, datetime: string }) {
         try {
+            console.log("Datos a enviar:", data);
             const response = await instance.post(endpoint, data);
             if (response.data) {
                 return response.data;
