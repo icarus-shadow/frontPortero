@@ -55,6 +55,65 @@ const ModalForm: React.FC<ModalFormProps> = ({
     const dispatch = useAppDispatch();
     const historyData = useAppSelector((state) => state.historyReducer.data);
 
+    const [buffer, setBuffer] = useState("");
+    const [lastTime, setLastTime] = useState(0);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const currentTime = Date.now();
+
+            // Si ha pasado demasiado tiempo, reiniciar buffer
+            if (currentTime - lastTime > 500) {
+                setBuffer("");
+            }
+
+            // El lector usualmente envía Enter al final
+            if (e.key === "Enter") {
+                if (buffer.length > 0) {
+                    console.log("Código leído:", buffer);
+                    const matchedUser = usersData?.find((user: users | null) => user !== null && user.documento === buffer);
+
+                    if (!matchedUser) {
+                        alert('usuario no registrado');
+                        return;
+                    }
+                    if (matchedUser) {
+                        // Si ya hay un usuario escaneado, no sobrescribir
+                        if (scannedUser) {
+                            alert('Ya hay un usuario escaneado. Límpielo primero si desea escanear otro.');
+                            return;
+                        }
+
+                        if (scannedElement && !scannedElement.usuarios.some(user => user.id == matchedUser.id)) {
+                            setAlertMessage('El usuario no es propietario del elemento. ¿Confirmar de todos modos?');
+                            setOnConfirm(() => () => {
+                                setScannedUser(matchedUser);
+                                setScannedCode(buffer);
+                                setShowOwnershipAlert(false);
+                            });
+                            setShowOwnershipAlert(true);
+                            return;
+                        } else {
+                            setScannedUser(matchedUser);
+                        }
+                    }
+                    setBuffer("");
+                }
+                return;
+            }
+
+            // Agregar la tecla al buffer si es un caracter válido
+            if (/^[0-9A-Za-z]$/.test(e.key)) {
+                setBuffer(prev => prev + e.key);
+            }
+
+            setLastTime(currentTime);
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [buffer, lastTime]);
+
     const resetForm = () => {
         setScannedCode('');
 

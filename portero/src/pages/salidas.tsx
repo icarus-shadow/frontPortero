@@ -1,106 +1,186 @@
 // @ts-ignore
 import * as React from 'react';
-import { useState, useEffect } from 'react';
-import { Box, Typography, Select, MenuItem, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, Avatar } from "@mui/material";
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import DinamicTable from '../components/DinamicTable';
-import { history } from '../services/api/data/history';
-import type { GridColDef } from "@mui/x-data-grid";
-import type { historial } from '../types/interfacesData';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { useState, useMemo } from 'react';
+import { Box, Button, Typography, Dialog as MuiDialog, DialogTitle, DialogContent, DialogActions, Avatar } from "@mui/material";
 import dayjs from 'dayjs';
+import isBetween from 'dayjs/plugin/isBetween';
+dayjs.extend(isBetween);
+import { useAppSelector } from "../services/redux/hooks.tsx";
+import { selectHistorialConSalidaHoy } from "../services/redux/slices/data/historySlice.tsx";
+import DinamicTable from '../components/DinamicTable';
+import type { historial } from '../types/interfacesData';
+import type { GridColDef } from "@mui/x-data-grid";
+import { Dialog } from 'primereact/dialog';
+import { Calendar } from 'primereact/calendar';
+import { Dropdown } from 'primereact/dropdown';
+import Reportes from '../components/Reportes.tsx';
+
+// * Defino los rangos de horas para los turnos
+const TURNOS = [
+    { label: 'Mañana', value: 'mañana' },
+    { label: 'Tarde', value: 'tarde' },
+    { label: 'Noche', value: 'noche' }
+];
+
+// ! Defino los rangos de horas para cada turno
+const RANGOS_TURNOS = {
+    mañana: { inicio: '06:00', fin: '12:00' },
+    tarde: { inicio: '12:00', fin: '18:00' },
+    noche: { inicio: '18:00', fin: '24:00' }
+};
 
 const Salidas = () => {
-    const [historyData, setHistoryData] = useState<historial[]>([]);
-    const [detailModalOpen, setDetailModalOpen] = React.useState(false);
-    const [selectedRecord, setSelectedRecord] = React.useState<any>(null);
+    const historialSalidaHoy = useAppSelector(selectHistorialConSalidaHoy);
+    const usersList = useAppSelector((state) => state.usersReducer.data);
 
-    // Estados para filtros
-    const [userFilter, setUserFilter] = useState('');
-    const [hourFrom, setHourFrom] = useState('');
-    const [hourTo, setHourTo] = useState('');
+    // * Estado para el modal de detalles
+    const [detailModalOpen, setDetailModalOpen] = useState(false);
+    const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await history.getAll();
-                setHistoryData(response.data || []);
-            } catch (error) {
-                console.error('Error al obtener datos de historial:', error);
-            }
-        };
-        fetchData();
-    }, []);
-
-    // Función para obtener salidas del día actual
-    const getTodaysExits = () => {
-        const todayDate = new Date().toDateString();
-        return historyData
-            .filter(item => item.salida && new Date(item.salida).toDateString() === todayDate)
-            .map(item => ({
-                ...item,
-                fecha_entrada: item.ingreso,
-                fecha_salida: item.salida,
-                usuarioNombre: item.usuario.nombre,
-                equipoNombre: item.equipo.marca || item.equipo.sn_equipo,
-                marcaEquipo: item.equipo.marca,
-                descripcion: item.equipo.descripcion,
-                usuarioNombreCompleto: `${item.usuario.nombre} ${item.usuario.apellido}`,
-                tipoElemento: item.equipo.tipo_elemento,
-            }));
-    };
-
-    // Obtener salidas del día actual
-    const todaysExits = getTodaysExits();
-
-    // Usuarios únicos para filtros
-    const uniqueUsers = Array.from(new Set(todaysExits.map(exit => exit.usuarioNombre))).sort();
-
-    // Filtrar salidas del día actual
-    const filteredTodaysExits = todaysExits.filter(exit => {
-        const matchesUser = !userFilter || exit.usuarioNombre === userFilter;
-        const exitDate = new Date(exit.fecha_salida);
-        const exitHour = exitDate.getHours();
-        const exitMinute = exitDate.getMinutes();
-        const exitTime = exitHour * 60 + exitMinute;
-        let matchesHour = true;
-        if (hourFrom) {
-            const [h, m] = hourFrom.split(':').map(Number);
-            const fromTime = h * 60 + m;
-            matchesHour = matchesHour && exitTime >= fromTime;
-        }
-        if (hourTo) {
-            const [h, m] = hourTo.split(':').map(Number);
-            const toTime = h * 60 + m;
-            matchesHour = matchesHour && exitTime <= toTime;
-        }
-        return matchesUser && matchesHour;
+    // * Estado para los filtros
+    const [filtros, setFiltros] = useState({
+        horaEspecifica: null as Date | null,
+        rangoHorasInicio: null as Date | null,
+        rangoHorasFin: null as Date | null,
+        usuario: null as number | null,
+        turno: null as string | null
     });
 
+    // * Estado para el modal de filtros
+    const [modalFiltrosVisible, setModalFiltrosVisible] = useState(false);
+
+    // * Estado para el modal de reportes
+    const [modalReportesVisible, setModalReportesVisible] = useState(false);
+
+    // * Transformo los datos base
+    const datosTransformados = useMemo(() => {
+        return (historialSalidaHoy || []).map((item: historial) => ({
+            ...item,
+            usuarioNombreCompleto: `${item.usuario?.nombre || ''} ${item.usuario?.apellido || ''}`.trim(),
+            equipoNombre: item.equipo?.marca || item.equipo?.sn_equipo || 'N/A',
+            fechaEntradaFormateada: dayjs(item.ingreso).format('DD/MM/YYYY HH:mm'),
+            fechaSalidaFormateada: item.salida ? dayjs(item.salida).format('DD/MM/YYYY HH:mm') : 'N/A',
+            marcaEquipo: item.equipo?.marca || 'N/A',
+            horaSalida: item.salida ? dayjs(item.salida) : null
+        }));
+    }, [historialSalidaHoy]);
+
+    // * Aplico los filtros a los datos
+    const datosFiltrados = useMemo(() => {
+        return datosTransformados.filter((item: any) => {
+            // * Filtro por hora específica
+            if (filtros.horaEspecifica && item.horaSalida) {
+                const horaFiltro = dayjs(filtros.horaEspecifica);
+                if (!item.horaSalida.isSame(horaFiltro, 'minute')) return false;
+            }
+
+            // * Filtro por rango de horas
+            if (filtros.rangoHorasInicio && filtros.rangoHorasFin && item.horaSalida) {
+                const horaInicio = dayjs(filtros.rangoHorasInicio);
+                const horaFin = dayjs(filtros.rangoHorasFin);
+                if (!item.horaSalida.isBetween(horaInicio, horaFin, 'minute', '[]')) return false;
+            }
+
+            // * Filtro por usuario
+            if (filtros.usuario && item.usuario?.id !== filtros.usuario) return false;
+
+            // * Filtro por turno
+            if (filtros.turno && item.horaSalida) {
+                const rango = RANGOS_TURNOS[filtros.turno as keyof typeof RANGOS_TURNOS];
+                const [horaInicioStr, minInicioStr] = rango.inicio.split(':');
+                const [horaFinStr, minFinStr] = rango.fin.split(':');
+                const horaInicio = parseInt(horaInicioStr);
+                const minInicio = parseInt(minInicioStr);
+                const horaFin = parseInt(horaFinStr);
+                const minFin = parseInt(minFinStr);
+                const inicio = item.horaSalida.clone().hour(horaInicio).minute(minInicio).second(0);
+                const fin = item.horaSalida.clone().hour(horaFin).minute(minFin).second(0);
+                if (filtros.turno === 'noche') {
+                    // ! Para turno noche, verifico si está entre 22:00 y 06:00
+                    if (!(!item.horaSalida.isBefore(item.horaSalida.clone().hour(22).minute(0), 'minute') || !item.horaSalida.isAfter(item.horaSalida.clone().hour(6).minute(0), 'minute'))) return false;
+                } else {
+                    if (!item.horaSalida.isBetween(inicio, fin, 'minute', '[)')) return false;
+                }
+            }
+
+            return true;
+        });
+    }, [datosTransformados, filtros]);
+
+    // * Defino las columnas con tipos correctos
     const columnasSalidas: GridColDef[] = [
-        { field: 'usuarioNombre', headerName: 'Usuario', width: 200 },
-        { field: 'equipoNombre', headerName: 'Equipo', width: 200 },
-        { field: 'descripcion', headerName: 'Descripción', width: 250 },
-        { field: 'fecha_salida', headerName: 'Fecha Salida', width: 200, renderCell: (params) => dayjs(params.value).format('DD/MM/YYYY HH:mm') },
+        {
+            field: 'ingreso',
+            headerName: 'Fecha de Entrada',
+            flex: 1,
+            renderCell: (params) => dayjs(params.value).format('DD/MM/YYYY HH:mm')
+        },
+        {
+            field: 'salida',
+            headerName: 'Fecha de Salida',
+            flex: 1,
+            renderCell: (params) => {
+                if (!params.value) {
+                    return <span style={{ color: 'green' }}>activo</span>;
+                }
+                return dayjs(params.value).format('DD/MM/YYYY HH:mm');
+            }
+        },
+        { field: 'usuarioNombreCompleto', headerName: 'Usuario', flex: 1 },
+        { field: 'marcaEquipo', headerName: 'Marca del Equipo', flex: 0.7 },
     ];
 
-    const exportToPDF = () => {
-        const doc = new jsPDF();
-        doc.text("Reporte de Salidas del Día", 14, 16);
+    // * Manejo cambios en filtros
+    const handleFiltroChange = (campo: string, valor: any) => {
+        setFiltros(prev => ({ ...prev, [campo]: valor }));
+    };
 
-        autoTable(doc, {
-            startY: 20,
-            head: [['Usuario', 'Equipo', 'Descripción', 'Fecha Salida']],
-            body: todaysExits.map(exit => [
-                exit.usuarioNombre,
-                exit.equipoNombre,
-                exit.descripcion,
-                dayjs(exit.fecha_salida).format('DD/MM/YYYY HH:mm')
-            ]),
+    // * Funciones para limpiar filtros individuales
+    const limpiarHoraEspecifica = () => {
+        setFiltros(prev => ({ ...prev, horaEspecifica: null }));
+    };
+
+    const limpiarRangoHoras = () => {
+        setFiltros(prev => ({ ...prev, rangoHorasInicio: null, rangoHorasFin: null }));
+    };
+
+    const limpiarUsuario = () => {
+        setFiltros(prev => ({ ...prev, usuario: null }));
+    };
+
+    const limpiarTurno = () => {
+        setFiltros(prev => ({ ...prev, turno: null }));
+    };
+
+    // * Función para limpiar todos los filtros
+    const limpiarTodosLosFiltros = () => {
+        setFiltros({
+            horaEspecifica: null,
+            rangoHorasInicio: null,
+            rangoHorasFin: null,
+            usuario: null,
+            turno: null
         });
+    };
 
-        doc.save("reporte_salidas.pdf");
+    // * Abro modal de filtros
+    const abrirModalFiltros = () => {
+        setModalFiltrosVisible(true);
+    };
+
+    // * Cierro modal de filtros
+    const cerrarModalFiltros = () => {
+        setModalFiltrosVisible(false);
+    };
+
+    // * Abro modal de reportes
+    const abrirModalReportes = () => {
+        setModalReportesVisible(true);
+    };
+
+    // * Cierro modal de reportes
+    const cerrarModalReportes = () => {
+        setModalReportesVisible(false);
     };
 
     const handleView = (row: any) => {
@@ -109,104 +189,165 @@ const Salidas = () => {
     };
 
     return (
-        <Box>
-            <Button variant="contained" onClick={exportToPDF} disabled={filteredTodaysExits.length === 0} sx={{ mb: 2, marginTop: 5, '&.Mui-disabled': { backgroundColor: 'var(--primary)', border: '2px solid var(--accent)', color: 'white', opacity: 1 } }}>
-                Generar Reporte PDF
-            </Button>
-            <Typography variant="h4" sx={{ mb: 2, color: 'var(--text)' }}>
-                Salidas del Día Actual
+        <Box sx={{ padding: 2 }}>
+            <Typography variant="h4" sx={{ mb: 2, color: "var(--text)" }}>
+                Salidas
             </Typography>
-            <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
-                <Select
-                    value={userFilter}
-                    onChange={(e) => setUserFilter(e.target.value)}
-                    displayEmpty
+            {/* * Botones de acción */}
+            <Box sx={{ display: 'flex', gap: 2, marginBottom: 2 }}>
+                <Button
+                    variant="outlined"
+                    onClick={abrirModalFiltros}
                     sx={{
-                        minWidth: 200,
-                        color: 'var(--text)',
-                        '& .MuiOutlinedInput-root': {
-                            '& fieldset': { borderColor: 'var(--text)' },
-                            '&:hover fieldset': { borderColor: 'var(--text)' },
-                            '&.Mui-focused fieldset': { borderColor: 'var(--text)' }
-                        },
-                        '& .MuiSelect-select': { color: 'var(--text)' },
-                        '& .MuiSelect-icon': { color: 'var(--text)' }
+                        color: 'var(--primary)',
+                        borderColor: 'var(--primary)',
+                        '&:hover': { backgroundColor: 'var(--primary)', color: 'white' }
                     }}
                 >
-                    <MenuItem value="" sx={{ color: 'var(--text)' }}>Todos los usuarios</MenuItem>
-                    {uniqueUsers.map(user => <MenuItem key={user} value={user} sx={{ color: 'var(--text)' }}>{user}</MenuItem>)}
-                </Select>
-                <TextField
-                    label="Hora desde"
-                    type="time"
-                    value={hourFrom}
-                    onChange={(e) => setHourFrom(e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                    InputProps={{
-                        endAdornment: <AccessTimeIcon sx={{ color: 'var(--text)' }} />
-                    }}
+                    Filtros
+                </Button>
+                <Button
+                    variant="contained"
+                    onClick={limpiarTodosLosFiltros}
                     sx={{
-                        width: 150,
-                        color: 'var(--text)',
-                        '& .MuiOutlinedInput-root': {
-                            '& fieldset': { borderColor: 'var(--text)' },
-                            '&:hover fieldset': { borderColor: 'var(--text)' },
-                            '&.Mui-focused fieldset': { borderColor: 'var(--text)' }
-                        },
-                        '& .MuiInputLabel-root': { color: 'var(--text)' },
-                        '& .MuiInputBase-input': { color: 'var(--text)' },
-                        '& .MuiInputBase-input::placeholder': { color: 'var(--text)' },
-                        '& .MuiInputAdornment-root': { color: 'var(--text)' }
+                        backgroundColor: 'var(--secondary)',
+                        '&:hover': { backgroundColor: 'var(--primary-hover)' }
                     }}
-                />
-                <TextField
-                    label="Hora hasta"
-                    type="time"
-                    value={hourTo}
-                    onChange={(e) => setHourTo(e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                    InputProps={{
-                        endAdornment: <AccessTimeIcon sx={{ color: 'var(--text)' }} />
-                    }}
+                >
+                    Limpiar Filtros
+                </Button>
+                <Button
+                    variant="contained"
+                    onClick={abrirModalReportes}
+                    disabled={datosFiltrados.length === 0}
                     sx={{
-                        width: 150,
-                        color: 'var(--text)',
-                        '& .MuiOutlinedInput-root': {
-                            '& fieldset': { borderColor: 'var(--text)' },
-                            '&:hover fieldset': { borderColor: 'var(--text)' },
-                            '&.Mui-focused fieldset': { borderColor: 'var(--text)' }
-                        },
-                        '& .MuiInputLabel-root': { color: 'var(--text)' },
-                        '& .MuiInputBase-input': { color: 'var(--text)' },
-                        '& .MuiInputBase-input::placeholder': { color: 'var(--text)' },
-                        '& .MuiInputAdornment-root': { color: 'var(--text)' }
+                        backgroundColor: 'var(--secondary)',
+                        '&:hover': { backgroundColor: 'var(--primary-hover)' }
                     }}
-                />
+                >
+                    Generar Reportes
+                </Button>
             </Box>
-            {filteredTodaysExits.length === 0 ? (
-                <Box sx={{
-                    textAlign: 'center',
-                    mt: 4,
-                    p: 3,
-                    backgroundColor: 'var(--primary)',
+            {/* * Tabla de datos filtrados */}
+            <DinamicTable
+                rows={datosFiltrados}
+                columns={columnasSalidas}
+                onView={handleView}
+            />
+
+            {/* * Modal de filtros con PrimeReact */}
+            <Dialog
+                header="Filtros de Salidas"
+                visible={modalFiltrosVisible}
+                onHide={cerrarModalFiltros}
+                style={{ backgroundColor: 'var(--background)', width: '50vw' }}
+                modal
+                className="p-fluid modal-form"
+                contentStyle={{
+                    backgroundColor: 'var(--background)',
                     color: 'var(--text)',
-                    borderRadius: 2,
-                    boxShadow: 3,
-                    border: '2px solid var(--accent)',
-                    width: "70vw",
-                }}>
-                    <Typography variant="h6">
-                        elementos no sacados el dia de hoy
-                    </Typography>
+                    border: '1px solid rgba(var(--secondary-rgb), 0.3)'
+                }}
+                headerStyle={{
+                    backgroundColor: 'var(--background)',
+                    color: 'var(--secondary)',
+                    borderBottom: '2px solid var(--secondary)'
+                }}
+            >
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {/* * Filtro hora específica */}
+                    <style dangerouslySetInnerHTML={{ __html: `.custom-dropdown .p-dropdown { background-color: var(--background); color: var(--text); border: 1px solid rgba(var(--secondary-rgb), 0.3); } .custom-dropdown .p-dropdown:hover, .custom-dropdown .p-dropdown:focus-within { border-color: var(--primary); } .custom-dropdown .p-dropdown-panel { background-color: var(--background); color: var(--text); border: 1px solid rgba(var(--secondary-rgb), 0.3); }` }} />
+                    <Box>
+                        <Typography variant="subtitle1" sx={{ marginBottom: 1, color: 'var(--text)' }}>Hora Específica</Typography>
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                            <Calendar
+                                value={filtros.horaEspecifica}
+                                onChange={(e: any) => handleFiltroChange('horaEspecifica', e.value)}
+                                timeOnly
+                                hourFormat="24"
+                                placeholder="Selecciona hora"
+                            />
+                            <Button variant="outlined" onClick={limpiarHoraEspecifica} size="small">Limpiar</Button>
+                        </Box>
+                    </Box>
+
+                    {/* * Filtro rango de horas */}
+                    <Box>
+                        <Typography variant="subtitle1" sx={{ marginBottom: 1, color: 'var(--text)' }}>Rango de Horas</Typography>
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                            <Calendar
+                                value={filtros.rangoHorasInicio}
+                                onChange={(e: any) => handleFiltroChange('rangoHorasInicio', e.value)}
+                                timeOnly
+                                hourFormat="24"
+                                placeholder="Hora inicio"
+                            />
+                            <Calendar
+                                value={filtros.rangoHorasFin}
+                                onChange={(e: any) => handleFiltroChange('rangoHorasFin', e.value)}
+                                timeOnly
+                                hourFormat="24"
+                                placeholder="Hora fin"
+                            />
+                            <Button variant="outlined" onClick={limpiarRangoHoras} size="small">Limpiar</Button>
+                        </Box>
+                    </Box>
+
+                    {/* * Filtro turno */}
+                    <Box>
+                        <Typography variant="subtitle1" sx={{ marginBottom: 1, color: 'var(--text)' }}>Turno</Typography>
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                            <Dropdown
+                                value={filtros.turno}
+                                options={TURNOS}
+                                onChange={(e: any) => handleFiltroChange('turno', e.value)}
+                                placeholder="Selecciona turno"
+                                showClear
+                                className="custom-dropdown"
+                                style={{ backgroundColor: 'var(--background)', color: 'var(--text)', border: '1px solid rgba(var(--secondary-rgb), 0.3)' }}
+                                panelStyle={{ backgroundColor: 'var(--background)', color: 'var(--text)', border: '1px solid rgba(var(--secondary-rgb), 0.3)' }}
+                            />
+                            <Button variant="outlined" onClick={limpiarTurno} size="small">Limpiar</Button>
+                        </Box>
+                    </Box>
+
+                    {/* * Filtro usuario */}
+                    <Box>
+                        <Typography variant="subtitle1" sx={{ marginBottom: 1, color: 'var(--text)' }}>Usuario</Typography>
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                            <Dropdown
+                                filter={true}
+                                options={(usersList || []).filter(user => user != null).map(user => ({ label: `${user.nombre} ${user.apellido}`, value: user.id }))}
+                                value={filtros.usuario}
+                                onChange={(e: any) => handleFiltroChange('usuario', e.value)}
+                                placeholder="Selecciona usuario"
+                                showClear
+                                className="custom-dropdown"
+                                style={{ backgroundColor: 'var(--background)', color: 'var(--text)', border: '1px solid rgba(var(--secondary-rgb), 0.3)' }}
+                                panelStyle={{ backgroundColor: 'var(--background)', color: 'var(--text)', border: '1px solid rgba(var(--secondary-rgb), 0.3)' }}
+                            />
+                            <Button variant="outlined" onClick={limpiarUsuario} size="small">Limpiar</Button>
+                        </Box>
+                    </Box>
                 </Box>
-            ) : (
-                <DinamicTable
-                    rows={filteredTodaysExits}
-                    columns={columnasSalidas}
-                    onView={handleView}
+            </Dialog>
+
+            {/* * Modal de reportes */}
+            <Dialog
+                header="Reportes de Salidas"
+                visible={modalReportesVisible}
+                onHide={cerrarModalReportes}
+                style={{ width: '90vw', height: '90vh' }}
+                modal
+                maximizable
+            >
+                <Reportes
+                    titleSeccion1="Salidas"
+                    dataSeccion1={datosFiltrados}
                 />
-            )}
-            <Dialog open={detailModalOpen} onClose={() => setDetailModalOpen(false)} maxWidth="md" fullWidth sx={{ '& .MuiDialog-paper': { borderRadius: 0 } }}>
+            </Dialog>
+
+            <MuiDialog open={detailModalOpen} onClose={() => setDetailModalOpen(false)} maxWidth="md" fullWidth sx={{ '& .MuiDialog-paper': { borderRadius: 0 } }}>
                 <DialogTitle sx={{ backgroundColor: 'var(--background)', color: 'var(--text)' }}>Detalles del Registro</DialogTitle>
                 <DialogContent sx={{ backgroundColor: 'var(--background)', color: 'var(--text)' }}>
                     {selectedRecord && (
@@ -250,7 +391,7 @@ const Salidas = () => {
                 <DialogActions sx={{ backgroundColor: 'var(--background)' }}>
                     <Button onClick={() => setDetailModalOpen(false)} sx={{ color: 'white', backgroundColor: '#f44336', '&:hover': { backgroundColor: '#d32f2f' }, fontSize: '1.1rem', padding: '8px 16px' }}>Cerrar</Button>
                 </DialogActions>
-            </Dialog>
+            </MuiDialog>
         </Box>
     );
 };
