@@ -12,7 +12,8 @@ import SliceEffects from "./services/useEffects/slice.tsx";
 
 function App() {
     const { user, token } = useAppSelector((state) => state.authReducer);
-    const isAuthenticated = !!token && !!user;
+    // Validar que exista token, usuario y que el rol sea Celador (3)
+    const isAuthenticated = !!token && !!user && user.role_id === 3;
 
     return (
         <Router>

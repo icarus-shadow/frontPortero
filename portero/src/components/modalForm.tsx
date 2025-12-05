@@ -168,8 +168,6 @@ const ModalForm: React.FC<ModalFormProps> = ({
 
             if (modalType === 'ingreso') {
                 // Verificar si hay un ingreso pendiente (sin salida)
-                const registrosDelElemento = historyData.filter(h => h.equipos_o_elementos_id === scannedElement.id);
-
                 const hasPendingEntry = historyData.some(h => {
                     const isThisElement = h.equipos_o_elementos_id === scannedElement.id;
                     const noSalida = !h.salida || h.salida === null || h.salida === '';
@@ -184,8 +182,6 @@ const ModalForm: React.FC<ModalFormProps> = ({
                 }
             } else if (modalType === 'salida') {
                 // Verificar si hay un ingreso activo (sin salida)
-                const registrosDelElemento = historyData.filter(h => h.equipos_o_elementos_id === scannedElement.id);
-
                 const hasActiveEntry = historyData.some(h => {
                     const isThisElement = h.equipos_o_elementos_id === scannedElement.id;
                     const noSalida = !h.salida || h.salida === null || h.salida === '';

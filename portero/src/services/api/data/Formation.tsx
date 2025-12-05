@@ -1,5 +1,4 @@
 import { instance } from "../baseApi.tsx";
-import type { formacion } from "../../../types/interfacesData.tsx";
 
 const endpoint = "portero/formaciones"
 

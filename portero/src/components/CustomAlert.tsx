@@ -32,7 +32,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ visible, severity, message, o
                         easing: 'easeOutElastic(1, .8)'
                     });
                 }
-            }).catch((err) => {
+            }).catch((_) => {
                 // Si no carga anime, solo mostrar el alerta sin animación
                 if (alertRef.current) {
                     alertRef.current.style.opacity = '1';
