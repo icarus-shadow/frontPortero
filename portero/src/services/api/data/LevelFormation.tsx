@@ -11,7 +11,6 @@ export const levelFormationApi = {
             }
             throw new Error('Invalid response format');
         } catch (e) {
-            console.error("Error en obtener tipos de programa:", e);
             throw e;
         }
     },

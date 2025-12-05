@@ -1,5 +1,3 @@
-// @ts-ignore
-import * as React from 'react';
 import { useState, useMemo } from 'react';
 import { Box, Button, Typography, Dialog as MuiDialog, DialogTitle, DialogContent, DialogActions, Avatar } from "@mui/material";
 import dayjs from 'dayjs';
@@ -67,7 +65,7 @@ const Salidas = () => {
 
     // * Aplico los filtros a los datos
     const datosFiltrados = useMemo(() => {
-        return datosTransformados.filter((item: any) => {
+        return datosTransformados.filter(item => {
             // * Filtro por hora específica
             if (filtros.horaEspecifica && item.horaSalida) {
                 const horaFiltro = dayjs(filtros.horaEspecifica);
@@ -183,6 +181,7 @@ const Salidas = () => {
         setModalReportesVisible(false);
     };
 
+    // * Manejo la vista de detalles
     const handleView = (row: any) => {
         setSelectedRecord(row);
         setDetailModalOpen(true);
@@ -228,6 +227,7 @@ const Salidas = () => {
                     Generar Reportes
                 </Button>
             </Box>
+
             {/* * Tabla de datos filtrados */}
             <DinamicTable
                 rows={datosFiltrados}
@@ -262,7 +262,7 @@ const Salidas = () => {
                         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                             <Calendar
                                 value={filtros.horaEspecifica}
-                                onChange={(e: any) => handleFiltroChange('horaEspecifica', e.value)}
+                                onChange={(e) => handleFiltroChange('horaEspecifica', e.value)}
                                 timeOnly
                                 hourFormat="24"
                                 placeholder="Selecciona hora"
@@ -277,14 +277,14 @@ const Salidas = () => {
                         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                             <Calendar
                                 value={filtros.rangoHorasInicio}
-                                onChange={(e: any) => handleFiltroChange('rangoHorasInicio', e.value)}
+                                onChange={(e) => handleFiltroChange('rangoHorasInicio', e.value)}
                                 timeOnly
                                 hourFormat="24"
                                 placeholder="Hora inicio"
                             />
                             <Calendar
                                 value={filtros.rangoHorasFin}
-                                onChange={(e: any) => handleFiltroChange('rangoHorasFin', e.value)}
+                                onChange={(e) => handleFiltroChange('rangoHorasFin', e.value)}
                                 timeOnly
                                 hourFormat="24"
                                 placeholder="Hora fin"
@@ -300,7 +300,7 @@ const Salidas = () => {
                             <Dropdown
                                 value={filtros.turno}
                                 options={TURNOS}
-                                onChange={(e: any) => handleFiltroChange('turno', e.value)}
+                                onChange={(e) => handleFiltroChange('turno', e.value)}
                                 placeholder="Selecciona turno"
                                 showClear
                                 className="custom-dropdown"
@@ -319,7 +319,7 @@ const Salidas = () => {
                                 filter={true}
                                 options={(usersList || []).filter(user => user != null).map(user => ({ label: `${user.nombre} ${user.apellido}`, value: user.id }))}
                                 value={filtros.usuario}
-                                onChange={(e: any) => handleFiltroChange('usuario', e.value)}
+                                onChange={(e) => handleFiltroChange('usuario', e.value)}
                                 placeholder="Selecciona usuario"
                                 showClear
                                 className="custom-dropdown"
@@ -346,17 +346,16 @@ const Salidas = () => {
                     dataSeccion1={datosFiltrados}
                 />
             </Dialog>
-
             <MuiDialog open={detailModalOpen} onClose={() => setDetailModalOpen(false)} maxWidth="md" fullWidth sx={{ '& .MuiDialog-paper': { borderRadius: 0 } }}>
                 <DialogTitle sx={{ backgroundColor: 'var(--background)', color: 'var(--text)' }}>Detalles del Registro</DialogTitle>
                 <DialogContent sx={{ backgroundColor: 'var(--background)', color: 'var(--text)' }}>
                     {selectedRecord && (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
-                            <Box sx={{ display: 'flex', gap: 3 }}>
+                            <Box sx={{ display: 'flex', gap: 3, p: 3 }}>
                                 {/* Sección Usuario Izquierda */}
                                 <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 3, backgroundColor: 'rgba(var(--primary-rgb), 0.1)', borderRadius: 2, border: '1px solid rgba(var(--primary-rgb), 0.3)' }}>
                                     <Typography variant="h6" sx={{ color: 'var(--primary)', mb: 2, fontWeight: 'bold' }}>Usuario</Typography>
-                                    <Avatar src={selectedRecord.usuario?.path_foto} alt={selectedRecord.usuarioNombreCompleto} sx={{ width: 100, height: 100, mb: 2, border: '2px solid var(--primary)' }} />
+                                    <Avatar src={`https://lumina-testing.onrender.com/api/images/${selectedRecord.usuario?.path_foto}`} alt={selectedRecord.usuarioNombreCompleto} sx={{ width: 100, height: 100, mb: 2, border: '2px solid var(--primary)' }} />
                                     <Typography variant="body1" sx={{ mb: 1 }}><strong>Nombre:</strong> {selectedRecord.usuarioNombreCompleto}</Typography>
                                     <Typography variant="body1" sx={{ mb: 1 }}><strong>Email:</strong> {selectedRecord.usuario?.email || 'N/A'}</Typography>
                                     <Typography variant="body1" sx={{ mb: 1 }}><strong>Documento:</strong> {selectedRecord.usuario?.documento || 'N/A'}</Typography>
@@ -368,7 +367,7 @@ const Salidas = () => {
                                 <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 3, backgroundColor: 'rgba(var(--secondary-rgb), 0.1)', borderRadius: 2, border: '1px solid rgba(var(--secondary-rgb), 0.3)' }}>
                                     <Typography variant="h6" sx={{ color: 'var(--secondary)', mb: 2, fontWeight: 'bold' }}>Dispositivo</Typography>
                                     {selectedRecord.equipo?.path_foto_equipo_implemento && (
-                                        <img src={selectedRecord.equipo.path_foto_equipo_implemento} alt="Imagen del Equipo" style={{ width: '100px', height: '100px', marginBottom: '16px', borderRadius: '8px' }} />
+                                        <img src={`https://lumina-testing.onrender.com/api/images/${selectedRecord.equipo?.path_foto_equipo_implemento}`} alt="Imagen del Equipo" style={{ width: '100px', height: '100px', marginBottom: '16px', borderRadius: '8px' }} />
                                     )}
                                     <Typography variant="body1" sx={{ mb: 1 }}><strong>Marca:</strong> {selectedRecord.marcaEquipo}</Typography>
                                     <Typography variant="body1" sx={{ mb: 1 }}><strong>Modelo:</strong> {selectedRecord.equipo?.descripcion || 'N/A'}</Typography>
@@ -392,7 +391,7 @@ const Salidas = () => {
                     <Button onClick={() => setDetailModalOpen(false)} sx={{ color: 'white', backgroundColor: '#f44336', '&:hover': { backgroundColor: '#d32f2f' }, fontSize: '1.1rem', padding: '8px 16px' }}>Cerrar</Button>
                 </DialogActions>
             </MuiDialog>
-        </Box>
+        </Box >
     );
 };
 

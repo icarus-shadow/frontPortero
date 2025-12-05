@@ -28,7 +28,6 @@ export const fetchFormations = createAsyncThunk(
             }
             return response as responseFormation;
         } catch (error) {
-            console.error("[formationSlice] error al obtener formaciones", error)
             throw error;
         }
     })

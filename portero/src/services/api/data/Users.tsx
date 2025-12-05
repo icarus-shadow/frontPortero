@@ -11,7 +11,6 @@ export const users = {
             }
             throw new Error('Invalid response format');
         } catch (e) {
-            console.error("Error en obtener usuarios:", e);
             throw e;
         }
     },

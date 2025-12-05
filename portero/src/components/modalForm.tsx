@@ -6,6 +6,7 @@ import {
 import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useAppSelector, useAppDispatch } from '../services/redux/hooks.tsx';
 import { fetchHistory, createHistory } from '../services/redux/slices/data/historySlice.tsx';
+import { useAlert } from '../components/AlertSystem';
 import type { users, elements } from '../types/interfacesData.tsx';
 
 // =============================
@@ -46,14 +47,12 @@ const ModalForm: React.FC<ModalFormProps> = ({
     const [showExitAlert, setShowExitAlert] = useState<boolean>(false);
     const [entryAlertMessage, setEntryAlertMessage] = useState<string>('');
     const [exitAlertMessage, setExitAlertMessage] = useState<string>('');
-    const [isBlocked, setIsBlocked] = useState<boolean>(false);
-    const [onConfirmEntry, setOnConfirmEntry] = useState<(() => void) | null>(null);
-    const [onConfirmExit, setOnConfirmExit] = useState<(() => void) | null>(null);
 
     const usersData = useAppSelector((state) => state.usersReducer.data);
     const elementsData = useAppSelector((state) => state.elementsReducer.data);
     const dispatch = useAppDispatch();
     const historyData = useAppSelector((state) => state.historyReducer.data);
+    const { showAlert } = useAlert();
 
     const [buffer, setBuffer] = useState("");
     const [lastTime, setLastTime] = useState(0);
@@ -70,17 +69,16 @@ const ModalForm: React.FC<ModalFormProps> = ({
             // El lector usualmente envía Enter al final
             if (e.key === "Enter") {
                 if (buffer.length > 0) {
-                    console.log("Código leído:", buffer);
                     const matchedUser = usersData?.find((user: users | null) => user !== null && user.documento === buffer);
 
                     if (!matchedUser) {
-                        alert('usuario no registrado');
+                        showAlert('error', 'usuario no registrado');
                         return;
                     }
                     if (matchedUser) {
                         // Si ya hay un usuario escaneado, no sobrescribir
                         if (scannedUser) {
-                            alert('Ya hay un usuario escaneado. Límpielo primero si desea escanear otro.');
+                            showAlert('error', 'Ya hay un usuario escaneado. Límpielo primero si desea escanear otro.');
                             return;
                         }
 
@@ -125,10 +123,6 @@ const ModalForm: React.FC<ModalFormProps> = ({
         setEntryAlertMessage('');
         setExitAlertMessage('');
         setAlertMessage('');
-        setIsBlocked(false);
-        setOnConfirmEntry(null);
-        setOnConfirmExit(null);
-        setOnConfirm(null);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -141,7 +135,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
                 datetime: new Date().toISOString()
             })).then(() => {
                 // Opcional: Mostrar notificación de éxito
-                alert('Registro procesado exitosamente');
+                showAlert('success', 'Registro procesado exitosamente');
             });
         } else {
             onSubmit({ codigo: scannedCode });
@@ -153,7 +147,6 @@ const ModalForm: React.FC<ModalFormProps> = ({
         setScannedElement(null);
         setShowEntryAlert(false);
         setShowExitAlert(false);
-        setIsBlocked(false);
     };
 
     useEffect(() => {
@@ -169,111 +162,44 @@ const ModalForm: React.FC<ModalFormProps> = ({
 
     // Validación de historial
     useEffect(() => {
-        console.log('🔄 useEffect validación ejecutado:', {
-            scannedUser: !!scannedUser,
-            scannedUserData: scannedUser,
-            scannedElement: !!scannedElement,
-            scannedElementData: scannedElement,
-            historyData: !!historyData,
-            historyDataIsArray: Array.isArray(historyData),
-            historyDataLength: historyData?.length,
-            modalType
-        });
 
         // Verificar que historyData sea un array válido
         if (scannedUser && scannedElement && Array.isArray(historyData)) {
-            console.log(' Todas las condiciones cumplidas - Verificando historial:', {
-                modalType,
-                scannedElementId: scannedElement.id,
-                historyDataCount: historyData.length,
-                todosLosRegistros: historyData
-            });
 
             if (modalType === 'ingreso') {
-                console.log(' Modo INGRESO - Buscando ingresos pendientes...');
-
                 // Verificar si hay un ingreso pendiente (sin salida)
                 const registrosDelElemento = historyData.filter(h => h.equipos_o_elementos_id === scannedElement.id);
-                console.log(' Registros del elemento:', registrosDelElemento);
 
                 const hasPendingEntry = historyData.some(h => {
                     const isThisElement = h.equipos_o_elementos_id === scannedElement.id;
                     const noSalida = !h.salida || h.salida === null || h.salida === '';
-                    console.log(' Verificando registro:', {
-                        id: h.id,
-                        equipos_o_elementos_id: h.equipos_o_elementos_id,
-                        scannedElementId: scannedElement.id,
-                        isThisElement,
-                        salida: h.salida,
-                        tipoSalida: typeof h.salida,
-                        noSalida,
-                        match: isThisElement && noSalida
-                    });
                     return isThisElement && noSalida;
                 });
 
-                console.log(' Ingreso - hasPendingEntry:', hasPendingEntry);
-
                 if (hasPendingEntry) {
-                    console.log('⚠ ALERTA DE INGRESO ACTIVADA');
-                    setEntryAlertMessage('El elemento tiene un ingreso anterior pendiente. Inconsistencia detectada.');
+                    setScannedUser(null);
+                    setScannedElement(null);
+                    setEntryAlertMessage('El elemento tiene un ingreso anterior pendiente. Los datos escaneados han sido limpiados automáticamente para prevenir problemas de integridad de datos, ya que el sistema no permite inconsistencias.');
                     setShowEntryAlert(true);
-                    setIsBlocked(true);
-                    setOnConfirmEntry(() => () => {
-                        console.log('Usuario confirmó alerta de ingreso');
-                        setShowEntryAlert(false);
-                        setIsBlocked(false);
-                    });
-                } else {
-                    console.log(' No hay ingresos pendientes, se puede proceder');
                 }
             } else if (modalType === 'salida') {
-                console.log(' Modo SALIDA - Buscando ingresos activos...');
-
                 // Verificar si hay un ingreso activo (sin salida)
                 const registrosDelElemento = historyData.filter(h => h.equipos_o_elementos_id === scannedElement.id);
-                console.log(' Registros del elemento:', registrosDelElemento);
 
                 const hasActiveEntry = historyData.some(h => {
                     const isThisElement = h.equipos_o_elementos_id === scannedElement.id;
                     const noSalida = !h.salida || h.salida === null || h.salida === '';
-                    console.log(' Verificando registro:', {
-                        id: h.id,
-                        equipos_o_elementos_id: h.equipos_o_elementos_id,
-                        scannedElementId: scannedElement.id,
-                        isThisElement,
-                        salida: h.salida,
-                        tipoSalida: typeof h.salida,
-                        noSalida,
-                        match: isThisElement && noSalida
-                    });
                     return isThisElement && noSalida;
                 });
 
-                console.log(' Salida - hasActiveEntry:', hasActiveEntry);
-
                 if (!hasActiveEntry) {
-                    console.log(' ALERTA DE SALIDA ACTIVADA - No hay entrada activa');
-                    setExitAlertMessage('El elemento no tiene un historial activo previo. No se le hizo ingreso.');
+                    setScannedUser(null);
+                    setScannedElement(null);
+                    setExitAlertMessage('El elemento no tiene un historial activo previo. Los datos escaneados han sido limpiados automáticamente para prevenir problemas de integridad de datos, ya que el sistema no permite inconsistencias.');
                     setShowExitAlert(true);
-                    setIsBlocked(true);
-                    setOnConfirmExit(() => () => {
-                        console.log('Usuario confirmó alerta de salida');
-                        setShowExitAlert(false);
-                        setIsBlocked(false);
-                    });
-                } else {
-                    console.log(' Hay entrada activa, se puede dar salida');
                 }
             }
         } else {
-            console.log(' Condiciones NO cumplidas:', {
-                faltaUser: !scannedUser,
-                faltaElement: !scannedElement,
-                faltaHistory: !historyData,
-                historyDataEsArray: Array.isArray(historyData),
-                valorHistoryData: historyData
-            });
         }
     }, [scannedUser, scannedElement, modalType, historyData]);
 
@@ -287,7 +213,6 @@ const ModalForm: React.FC<ModalFormProps> = ({
                 try {
                     html5QrcodeScannerRef.current.clear();
                 } catch (error) {
-                    console.warn('Error al limpiar el escáner QR:', error);
                 }
                 html5QrcodeScannerRef.current = null;
             }
@@ -304,8 +229,6 @@ const ModalForm: React.FC<ModalFormProps> = ({
 
 
                 if (!decodedText || decodedText.trim() === '') {
-                    console.error('El código escaneado está vacío o inválido');
-
                     return;
                 }
 
@@ -313,19 +236,19 @@ const ModalForm: React.FC<ModalFormProps> = ({
                 const matchedElement = elementsData?.find((element: elements | null) => element !== null && element.qr_hash === decodedText);
 
                 if (matchedUser && matchedElement) {
-                    alert('El código coincide con un usuario y un elemento. No se puede determinar cuál escanear.');
+                    showAlert('error', 'El código coincide con un usuario y un elemento. No se puede determinar cuál escanear.');
                     return;
                 }
 
                 if (!matchedUser && !matchedElement) {
-                    alert('Código no encontrado en usuarios ni elementos.');
+                    showAlert('error', 'Código no encontrado en usuarios ni elementos.');
                     return;
                 }
 
                 if (matchedUser) {
                     // Si ya hay un usuario escaneado, no sobrescribir
                     if (scannedUser) {
-                        alert('Ya hay un usuario escaneado. Límpielo primero si desea escanear otro.');
+                        showAlert('error', 'Ya hay un usuario escaneado. Límpielo primero si desea escanear otro.');
                         return;
                     }
 
@@ -346,7 +269,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
                 if (matchedElement) {
                     // Si ya hay un elemento escaneado, no sobrescribir
                     if (scannedElement) {
-                        alert('Ya hay un elemento escaneado. Límpielo primero si desea escanear otro.');
+                        showAlert('error', 'Ya hay un elemento escaneado. Límpielo primero si desea escanear otro.');
                         return;
                     }
 
@@ -393,9 +316,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
                     try {
                         html5QrcodeScanner.render(onScanSuccess, onScanFailure);
                         html5QrcodeScannerRef.current = html5QrcodeScanner;
-                        console.log('Escáner QR inicializado correctamente');
                     } catch (error) {
-                        console.error('Error al iniciar el escáner QR:', error);
                     }
                 }
             }, 100);
@@ -668,7 +589,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
                         Cancelar
                     </button>
                     <button type="button" onClick={() => handleSubmit(new Event('submit') as any)} className="btn-save"
-                        disabled={!(scannedUser && scannedElement) || isBlocked} style={{
+                        disabled={!(scannedUser && scannedElement)} style={{
                             backgroundColor: 'var(--button-save-bg)',
                             color: 'var(--button-save-color)',
                             border: 'none',
@@ -811,14 +732,6 @@ const ModalForm: React.FC<ModalFormProps> = ({
                     }}>
                         {entryAlertMessage}
                     </Alert>
-                    <Typography sx={{
-                        mt: 2,
-                        fontSize: '0.95rem',
-                        color: '#666'
-                    }}>
-                        El elemento que intenta ingresar ya tiene un registro de entrada sin salida correspondiente.
-                        Esto puede indicar que el elemento nunca salió del sistema o que hay un error en el registro anterior.
-                    </Typography>
                 </DialogContent>
                 <DialogActions sx={{
                     backgroundColor: '#ffebee',
@@ -826,9 +739,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
                     pb: 3
                 }}>
                     <Button
-                        onClick={() => {
-                            if (onConfirmEntry) onConfirmEntry();
-                        }}
+                        onClick={() => setShowEntryAlert(false)}
                         variant="contained"
                         size="large"
                         sx={{
@@ -883,14 +794,6 @@ const ModalForm: React.FC<ModalFormProps> = ({
                     }}>
                         {exitAlertMessage}
                     </Alert>
-                    <Typography sx={{
-                        mt: 2,
-                        fontSize: '0.95rem',
-                        color: '#666'
-                    }}>
-                        El elemento que intenta dar de salida no tiene un registro de entrada activo en el sistema.
-                        No se puede registrar una salida sin un ingreso previo correspondiente.
-                    </Typography>
                 </DialogContent>
                 <DialogActions sx={{
                     backgroundColor: '#fff3e0',
@@ -898,9 +801,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
                     pb: 3
                 }}>
                     <Button
-                        onClick={() => {
-                            if (onConfirmExit) onConfirmExit();
-                        }}
+                        onClick={() => setShowExitAlert(false)}
                         variant="contained"
                         size="large"
                         sx={{

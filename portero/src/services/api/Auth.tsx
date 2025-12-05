@@ -18,7 +18,6 @@ export const Auth = {
             }
             throw new Error('Invalid response format');
         } catch (error) {
-            console.error("Error en login:", error);
             throw error;
         }
     },

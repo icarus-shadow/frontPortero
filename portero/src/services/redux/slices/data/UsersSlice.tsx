@@ -1,10 +1,10 @@
-import {createAsyncThunk, createSlice} from '@reduxjs/toolkit'
-import {users} from "../../../api/data/Users.tsx";
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import { users } from "../../../api/data/Users.tsx";
 import type { responseUsersSlice } from "../../../../types/interfacesData.tsx";
 
 // Define the initial state using that type
 const initialState: responseUsersSlice = {
-    fetchSuccess:  null,
+    fetchSuccess: null,
     deleteSuccess: null,
     addSuccess: null,
     updateSuccess: null,
@@ -15,25 +15,24 @@ const initialState: responseUsersSlice = {
 
 export const fetchUsers = createAsyncThunk(
     'users/list',
-    async() => {
-    try {
-        const response = await users.getAll();
-        if (!response.data) {
-            throw new Error('Respuesta inválida del servidor');
+    async () => {
+        try {
+            const response = await users.getAll();
+            if (!response.data) {
+                throw new Error('Respuesta inválida del servidor');
+            }
+            return response as responseUsersSlice;
+        } catch (error) {
+            throw error;
         }
-        return response as responseUsersSlice;
-    } catch (error) {
-        console.error("[usersSlice] error al obtener usuarios", error)
-        throw error;
-    }
-})
+    })
 
 
 export const usersSlice = createSlice({
     name: 'users',
     initialState,
     reducers: {},
-    extraReducers: (builder) =>{
+    extraReducers: (builder) => {
         builder
             //fetch
             .addCase(fetchUsers.pending, (state) => {

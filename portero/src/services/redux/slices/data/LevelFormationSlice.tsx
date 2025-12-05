@@ -28,7 +28,6 @@ export const fetchLevelFormations = createAsyncThunk(
             }
             return response as responseLevelFormation;
         } catch (error) {
-            console.error("[levelFormationSlice] error al obtener tipos de programa", error)
             throw error;
         }
     })

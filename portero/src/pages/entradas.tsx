@@ -100,7 +100,7 @@ const Entradas = () => {
 
     // * Aplico los filtros a los datos de hoy
     const datosFiltradosHoy = useMemo(() => {
-        return datosTransformadosHoy.filter((item: any) => {
+        return datosTransformadosHoy.filter(item => {
             // * Filtro por hora específica
             if (filtrosHoy.horaEspecifica && item.horaIngreso) {
                 const horaFiltro = dayjs(filtrosHoy.horaEspecifica);
@@ -142,7 +142,7 @@ const Entradas = () => {
 
     // * Aplico los filtros a los datos de otros
     const datosFiltradosOtros = useMemo(() => {
-        return datosTransformadosOtros.filter((item: any) => {
+        return datosTransformadosOtros.filter(item => {
             // * Filtro por hora específica
             if (filtrosOtros.horaEspecifica && item.horaIngreso) {
                 const horaFiltro = dayjs(filtrosOtros.horaEspecifica);
@@ -414,7 +414,7 @@ const Entradas = () => {
                         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                             <Calendar
                                 value={filtrosHoy.horaEspecifica}
-                                onChange={(e: any) => handleFiltroChangeHoy('horaEspecifica', e.value)}
+                                onChange={(e) => handleFiltroChangeHoy('horaEspecifica', e.value)}
                                 timeOnly
                                 hourFormat="24"
                                 placeholder="Selecciona hora"
@@ -429,14 +429,14 @@ const Entradas = () => {
                         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                             <Calendar
                                 value={filtrosHoy.rangoHorasInicio}
-                                onChange={(e: any) => handleFiltroChangeHoy('rangoHorasInicio', e.value)}
+                                onChange={(e) => handleFiltroChangeHoy('rangoHorasInicio', e.value)}
                                 timeOnly
                                 hourFormat="24"
                                 placeholder="Hora inicio"
                             />
                             <Calendar
                                 value={filtrosHoy.rangoHorasFin}
-                                onChange={(e: any) => handleFiltroChangeHoy('rangoHorasFin', e.value)}
+                                onChange={(e) => handleFiltroChangeHoy('rangoHorasFin', e.value)}
                                 timeOnly
                                 hourFormat="24"
                                 placeholder="Hora fin"
@@ -452,7 +452,7 @@ const Entradas = () => {
                             <Dropdown
                                 value={filtrosHoy.turno}
                                 options={TURNOS}
-                                onChange={(e: any) => handleFiltroChangeHoy('turno', e.value)}
+                                onChange={(e) => handleFiltroChangeHoy('turno', e.value)}
                                 placeholder="Selecciona turno"
                                 showClear
                                 className="custom-dropdown"
@@ -471,7 +471,7 @@ const Entradas = () => {
                                 filter={true}
                                 options={(usersList || []).filter(user => user != null).map(user => ({ label: `${user.nombre} ${user.apellido}`, value: user.id }))}
                                 value={filtrosHoy.usuario}
-                                onChange={(e: any) => handleFiltroChangeHoy('usuario', e.value)}
+                                onChange={(e) => handleFiltroChangeHoy('usuario', e.value)}
                                 placeholder="Selecciona usuario"
                                 showClear
                                 className="custom-dropdown"
@@ -511,7 +511,7 @@ const Entradas = () => {
                         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                             <Calendar
                                 value={filtrosOtros.horaEspecifica}
-                                onChange={(e: any) => handleFiltroChangeOtros('horaEspecifica', e.value)}
+                                onChange={(e) => handleFiltroChangeOtros('horaEspecifica', e.value)}
                                 timeOnly
                                 hourFormat="24"
                                 placeholder="Selecciona hora"
@@ -526,14 +526,14 @@ const Entradas = () => {
                         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                             <Calendar
                                 value={filtrosOtros.rangoHorasInicio}
-                                onChange={(e: any) => handleFiltroChangeOtros('rangoHorasInicio', e.value)}
+                                onChange={(e) => handleFiltroChangeOtros('rangoHorasInicio', e.value)}
                                 timeOnly
                                 hourFormat="24"
                                 placeholder="Hora inicio"
                             />
                             <Calendar
                                 value={filtrosOtros.rangoHorasFin}
-                                onChange={(e: any) => handleFiltroChangeOtros('rangoHorasFin', e.value)}
+                                onChange={(e) => handleFiltroChangeOtros('rangoHorasFin', e.value)}
                                 timeOnly
                                 hourFormat="24"
                                 placeholder="Hora fin"
@@ -549,7 +549,7 @@ const Entradas = () => {
                             <Dropdown
                                 value={filtrosOtros.turno}
                                 options={TURNOS}
-                                onChange={(e: any) => handleFiltroChangeOtros('turno', e.value)}
+                                onChange={(e) => handleFiltroChangeOtros('turno', e.value)}
                                 placeholder="Selecciona turno"
                                 showClear
                                 className="custom-dropdown"
@@ -568,7 +568,7 @@ const Entradas = () => {
                                 filter={true}
                                 options={(usersList || []).filter(user => user != null).map(user => ({ label: `${user.nombre} ${user.apellido}`, value: user.id }))}
                                 value={filtrosOtros.usuario}
-                                onChange={(e: any) => handleFiltroChangeOtros('usuario', e.value)}
+                                onChange={(e) => handleFiltroChangeOtros('usuario', e.value)}
                                 placeholder="Selecciona usuario"
                                 showClear
                                 className="custom-dropdown"

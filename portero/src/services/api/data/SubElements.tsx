@@ -11,7 +11,6 @@ export const subElementsApi = {
             }
             throw new Error('Invalid response format');
         } catch (e) {
-            console.error("Error en obtener elementos adicionales:", e);
             throw e;
         }
     },

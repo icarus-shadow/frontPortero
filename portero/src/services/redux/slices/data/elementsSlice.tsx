@@ -18,7 +18,6 @@ export const  fetchElements = createAsyncThunk(
             }
             return response.data as responseElements;
         } catch (error) {
-            console.error("[elementsSlice] error al obtener los elementos", error);
             throw error;
         }
     })

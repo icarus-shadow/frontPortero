@@ -28,7 +28,6 @@ export const fetchSubElements = createAsyncThunk(
             }
             return response as responseSubElements;
         } catch (error) {
-            console.error("[subElementsSlice] error al obtener sub-elementos", error)
             throw error;
         }
     })

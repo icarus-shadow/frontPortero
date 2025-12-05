@@ -5,10 +5,10 @@ import { useAppSelector } from '../services/redux/hooks';
 const ContNav = () => {
     const historyData = useAppSelector(state => state.historyReducer.data);
 
-    const activeElements = historyData ? new Set(historyData.filter(item => !item.salida || item.salida === '').map(item => item.equipos_o_elementos_id)).size : 0;
+    const activeElements = historyData ? historyData.filter(item => !item.salida || item.salida === '').length : 0;
 
     const today = new Date().toISOString().split('T')[0];
-    const exitedToday = historyData ? new Set(historyData.filter(item => item.salida && item.salida.startsWith(today)).map(item => item.equipos_o_elementos_id)).size : 0;
+    const exitedToday = historyData ? historyData.filter(item => item.salida && item.salida.startsWith(today)).length : 0;
 
     return (
         <div className="contMain">

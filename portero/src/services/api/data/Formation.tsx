@@ -12,7 +12,6 @@ export const formation = {
             }
             throw new Error('Invalid response format');
         } catch (e) {
-            console.error("Error en obtener formaciones:", e);
             throw e;
         }
     },
